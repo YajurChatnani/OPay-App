@@ -6,8 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 /// Real Bluetooth service using flutter_bluetooth_serial
 class ClassicBluetoothService {
-  static const platform = MethodChannel('com.rudrapay.app/classic_bt');
-  static const _eventChannel = EventChannel('com.rudrapay.app/classic_bt_stream');
+  static const platform = MethodChannel('com.example.opay/classic_bt');
+  static const _eventChannel = EventChannel('com.example.opay/classic_bt_stream');
 
   final fbs.FlutterBluetoothSerial _bluetooth = fbs.FlutterBluetoothSerial.instance;
   fbs.BluetoothConnection? _connection;
@@ -18,7 +18,7 @@ class ClassicBluetoothService {
   
   // UUID for SPP (Serial Port Profile)
   static const String _sppUuid = '00001101-0000-1000-8000-00805F9B34FB';
-  static const String _serviceName = 'RudraPay';
+  static const String _serviceName = 'OPay';
 
   void _ensureNativeEventListener() {
     if (_nativeEventSub != null) return;

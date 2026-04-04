@@ -77,7 +77,7 @@ class _ReceiveBluetoothConnectingScreenState
       });
       
       await _bluetoothService.startListening(
-        _deviceName ?? 'RudraPay Device',
+        _deviceName ?? 'OPay Device',
         (connectionInfo) {
           print('[RECEIVE-CONNECT] Sender connected! info=$connectionInfo');
           

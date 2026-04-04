@@ -90,7 +90,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'By using RudraPay, you agree to these terms and conditions.',
+                'By using OPay, you agree to these terms and conditions.',
                 style: TextStyle(color: Colors.white70, fontSize: 13),
               ),
               const SizedBox(height: 16),
@@ -130,7 +130,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'RudraPay is provided "as is" without warranties. We are not liable for any losses.',
+                'OPay is provided "as is" without warranties. We are not liable for any losses.',
                 style: TextStyle(color: Colors.white70, fontSize: 13),
               ),
             ],

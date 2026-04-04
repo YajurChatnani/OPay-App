@@ -57,7 +57,7 @@ class _RechargeResultScreenState extends State<RechargeResultScreen> {
           txnId: txnId,
           amount: widget.response.totalTokens,
           type: 'credit',
-          merchant: 'RudraPay Server',
+          merchant: 'OPay Server',
           timestamp: DateTime.now().toIso8601String(),
         ),
       );

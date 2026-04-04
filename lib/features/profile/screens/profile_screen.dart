@@ -355,7 +355,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// Generates a cryptographically unique app ID
   static String _generateUniqueAppId(String userId) {
     // Use user ID as seed for consistent app ID
-    final seed = 'RUDRAPAY-$userId';
+    final seed = 'OPAY-$userId';
     final bytes = utf8.encode(seed);
     final hash = sha256.convert(bytes);
     return hash.toString().substring(0, 32).toUpperCase();
