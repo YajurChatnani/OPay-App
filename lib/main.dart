@@ -1,121 +1,216 @@
+// Purpose: App entry point that loads env config, preloads key material, and wires global routes.
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'features/home/screens/home_screen.dart';
+import 'features/profile/screens/profile_screen.dart';
+import 'features/payment/screens/payment_entry_screen.dart';
+import 'features/receive/screens/receive_entry_screen.dart';
+import 'features/receive/screens/accept_payment_qr_screen.dart';
+import 'features/transactions/screens/transactions_list_screen.dart';
+import 'features/bluetooth/screens/pay_bluetooth_connecting_screen.dart';
+import 'features/bluetooth/screens/receive_bluetooth_connecting_screen.dart';
+import 'features/bluetooth/screens/receive_bluetooth_connected_screen.dart';
+import 'features/payment/screens/enter_amount_screen.dart';
+import 'features/payment/screens/transfer_pending_screen.dart';
+import 'features/payment/screens/transaction_result_screen.dart';
+import 'features/payment/screens/transaction_fail_screen.dart';
+import 'features/transactions/screens/transaction_detail_screen.dart';
+import 'features/balance/screens/add_balance_screen.dart';
+import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/signup_screen.dart';
+import 'features/auth/screens/onboarding_screen.dart';
+import 'core/config/app_config.dart';
+import 'features/balance/services/wallet_keypair_service.dart';
+import 'core/services/token_service.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    // Load environment variables
+    await dotenv.load(fileName: ".env");
+    
+    // Validate configuration
+    final config = AppConfig();
+    if (!config.isConfigured) {
+      throw Exception(config.configError);
+    }
+
+    // Generate/load wallet keypair once on startup.
+    // Keypair is persisted in secure storage and cached in memory.
+    // Ignore preload errors so app can still boot and show actionable UI errors later.
+    try {
+      await WalletKeyPairService.preloadDefaultNetworkKeyPair();
+    } catch (_) {}
+    
+    runApp(const WalletApp());
+  } catch (e) {
+    runApp(ErrorApp(error: e.toString()));
+  }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class WalletApp extends StatelessWidget {
+  const WalletApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+      debugShowCheckedModeBanner: false,
+      title: 'Offline Wallet',
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF0B0B0B),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: FutureBuilder<bool>(
+        future: TokenService.isLoggedIn(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              backgroundColor: Color(0xFF0B0B0B),
+              body: Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                ),
+              ),
+            );
+          }
+          
+          // If logged in, go to home, otherwise go to login
+          if (snapshot.data == true) {
+            return const HomeScreen();
+          } else {
+            return const LoginScreen();
+          }
+        },
+      ),
+      onGenerateRoute: _routeBuilder,
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+/// Global animated routing (PERMANENT)
+Route _routeBuilder(RouteSettings settings) {
+  Widget page;
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
+  switch (settings.name) {
+    case '/login':
+      page = const LoginScreen();
+      break;
+    case '/signup':
+      page = const SignupScreen();
+      break;
+    case '/onboarding':
+      // Extract arguments for onboarding
+      final args = settings.arguments as Map<String, dynamic>?;
+      page = OnboardingScreen(
+        email: args?['email'] as String?,
+        password: args?['password'] as String?,
+      );
+      break;
+    case '/home':
+      page = const HomeScreen();
+      break;
+    case '/profile':
+      page = const ProfileScreen();
+      break;
+    case '/pay':
+      page = const PaymentEntryScreen();
+      break;
+    case '/receive':
+      page = const ReceiveEntryScreen();
+      break;
+    case '/receive/accept':
+      page = const AcceptPaymentQrScreen();
+      break;
+    case '/transactions':
+      page = const TransactionsListScreen();
+      break;
+    case '/pay/connect':
+      page = const PayBluetoothConnectingScreen();
+      break;
+    case '/receive/connect':
+      page = const ReceiveBluetoothConnectingScreen();
+      break;
+    case '/receive/connected':
+      page = const ReceiveBluetoothConnectedScreen();
+      break;
+    case '/pay/amount':
+      page = const EnterAmountScreen();
+      break;
+    case '/pay/pending':
+      page = const TransferPendingScreen();
+      break;
+    case '/transaction/result':
+      page = const TransactionResultScreen();
+      break;
+    case '/transaction/fail':
+      page = const TransactionFailScreen();
+      break;
+    case '/transaction/detail':
+      page = const TransactionDetailScreen();
+      break;
+    case '/add-balance':
+      page = const AddBalanceScreen();
+      break;
 
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+    default:
+      page = const LoginScreen();
+  }
 
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  return PageRouteBuilder(
+    transitionDuration: const Duration(milliseconds: 350),
+    settings: settings,
+    pageBuilder: (_, animation, __) => FadeTransition(
+      opacity: animation,
+      child: page,
+    ),
+  );
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+/// Error app widget displayed when configuration fails
+class ErrorApp extends StatelessWidget {
+  final String error;
+  
+  const ErrorApp({super.key, required this.error});
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: const Color(0xFF0B0B0B),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.settings_suggest_rounded,
+                  size: 80,
+                  color: Colors.red.shade400,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Configuration Error',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red.shade400,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  error,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
